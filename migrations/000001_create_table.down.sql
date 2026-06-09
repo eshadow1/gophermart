@@ -1,0 +1,9 @@
+-- +migrate Down
+
+DROP TABLE IF EXISTS users CASCADE;
+
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TYPE IF EXISTS order_status;
+
+DROP TABLE IF EXISTS withdrawals CASCADE;
+DROP TABLE IF EXISTS user_balances CASCADE;
