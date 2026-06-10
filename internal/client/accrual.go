@@ -53,7 +53,7 @@ func NewAccrualClient(baseURL string) *AccrualClient {
 // GetAccrual запрашивает информацию о начислении для указанного номера заказа
 // во внешней системе начислений.
 func (c *AccrualClient) GetAccrual(ctx context.Context, orderNum string) (*AccrualResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/api/orders/%s", c.baseURL, orderNum), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/api/orders/%s", c.baseURL, orderNum), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
