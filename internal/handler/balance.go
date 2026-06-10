@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/eshadow1/gophermart/internal/configs"
+	"github.com/eshadow1/gophermart/internal/loggers"
 	"github.com/eshadow1/gophermart/internal/models"
 	"github.com/eshadow1/gophermart/internal/service"
 	"github.com/eshadow1/gophermart/internal/utils"
@@ -69,6 +70,8 @@ func (h *balanceHandler) RequestWithdraw(w http.ResponseWriter, r *http.Request)
 		utils.RespondError(w, &utils.ValidationError{Msg: "invalid json format"})
 		return
 	}
+
+	loggers.Log.Infow("order request", "id", userID, "body", req)
 
 	err := h.s.RequestWithdraw(r.Context(), userID, req)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/eshadow1/gophermart/internal/configs"
+	"github.com/eshadow1/gophermart/internal/loggers"
 	"github.com/eshadow1/gophermart/internal/models"
 	"github.com/eshadow1/gophermart/internal/repository"
 	"github.com/eshadow1/gophermart/internal/service"
@@ -56,6 +57,7 @@ func (h *orderHandler) UploadUserOrder(w http.ResponseWriter, r *http.Request) {
 		utils.RespondError(w, &utils.ValidationError{Msg: "invalid request body"})
 		return
 	}
+	loggers.Log.Infow("order request", "id", userID, "body", string(body))
 
 	isInsert, err := h.s.LoadUserOrder(r.Context(), userID, strings.TrimSpace(string(body)))
 	if err != nil {
