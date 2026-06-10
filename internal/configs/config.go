@@ -19,7 +19,7 @@ const (
 	// DefaultAddr — адрес HTTP-сервера приложения по умолчанию.
 	DefaultAddr = "localhost:8080"
 	// DefaultSystemAddr — адрес внешней системы начислений по умолчанию.
-	DefaultSystemAddr = "localhost:8090"
+	DefaultSystemAddr = "http://localhost:8090"
 	// DefaultLevelLog — уровень логирования по умолчанию.
 	DefaultLevelLog = "info"
 	// DefaultMigrationPath — путь к директории с миграциями базы данных по умолчанию.

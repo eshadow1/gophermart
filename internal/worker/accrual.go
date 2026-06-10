@@ -15,7 +15,9 @@ import (
 
 const (
 	statusProcessing = "PROCESSING"
+	statusProcessed  = "PROCESSED"
 	statusInvalid    = "INVALID"
+	maxRetries       = 5
 )
 
 // OrderRepo определяет контракт для слоя репозитория, работающего
@@ -102,7 +104,7 @@ func (w *AccrualWorker) processBatch(ctx context.Context) {
 func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOrder) {
 	defer w.sem.Release(1)
 
-	for {
+	for retry := 0; retry <= maxRetries; retry++ {
 		res, err := w.accClient.GetAccrual(ctx, o.Number)
 		if err != nil {
 			if rl, ok := err.(*client.RateLimitError); ok {
@@ -130,7 +132,7 @@ func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOr
 		var accrual *float64
 		switch res.Status {
 		case "PROCESSED":
-			status = statusProcessing
+			status = statusProcessed
 			accrual = &res.Accrual
 			if *accrual > 0 {
 				if errBalance := w.balanceRepo.AddAccrual(ctx, o.UserID, *accrual); errBalance != nil {
