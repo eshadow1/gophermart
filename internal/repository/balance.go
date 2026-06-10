@@ -64,15 +64,6 @@ func (r *BalanceRepo) Withdraw(ctx context.Context, userID int64, infoReq models
 		}
 	}()
 
-	var existingUserID int64
-	errSelect := r.pool.QueryRow(ctx, "SELECT user_id FROM orders WHERE number = $1", infoReq.Order).Scan(&existingUserID)
-	if errSelect != nil {
-		if errors.Is(errSelect, pgx.ErrNoRows) || existingUserID == userID {
-			return ErrOrder
-		}
-		return errSelect
-	}
-
 	res, errUpdate := tx.Exec(ctx,
 		`UPDATE user_balances 
 		 SET current = current - $2, withdrawn = withdrawn + $2 
