@@ -25,6 +25,7 @@ func LoggerMiddleware() func(next http.Handler) http.Handler {
 				"uri", r.RequestURI,
 				"duration", duration.String(),
 				"status", lrw.ResponseData.Status,
+				"body", lrw.ResponseData.Body,
 				"size", fmt.Sprintf("%d bytes", lrw.ResponseData.Size),
 			)
 		})
@@ -36,6 +37,7 @@ type (
 	responseData struct {
 		Status int
 		Size   int
+		Body   string
 	}
 
 	// loggingResponseWriter реализует интерфейс http.ResponseWriter и перехватывает
@@ -60,6 +62,7 @@ func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.ResponseData.Size += size
+	r.ResponseData.Body = string(b)
 	return size, err
 }
 

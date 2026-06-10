@@ -39,7 +39,7 @@ type Balance interface {
 // InitRouter инициализирует и настраивает HTTP-маршрутизатор (chi.Mux) для приложения.
 func InitRouter(cfg *configs.Config, o Order, b Balance, auth AuthHandler) *chi.Mux {
 	rs := chi.NewRouter()
-	rs.Use(customMiddleware.LoggerMiddleware(), customMiddleware.GzipMiddleware(), middleware.Timeout(timeoutRequest))
+	rs.Use(customMiddleware.GzipMiddleware(), customMiddleware.LoggerMiddleware(), middleware.Timeout(timeoutRequest))
 	rs.Route("/api/user/", func(r chi.Router) {
 		r.Post("/register", auth.RegisterUser)
 		r.Post("/login", auth.LoginUser)
