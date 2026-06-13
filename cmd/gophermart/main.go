@@ -55,7 +55,7 @@ func main() {
 
 	dbConnect, errConnect := builder.CreateNewPool(&cfg.Storage)
 	if errConnect != nil {
-		fmt.Println("Error connecting to database:", errConnect)
+		loggers.Log.Fatalf("error connecting to database: %v", errConnect)
 	}
 
 	orderR := repository.NewOrderRepo(dbConnect)

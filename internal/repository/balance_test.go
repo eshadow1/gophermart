@@ -53,7 +53,7 @@ func TestBalanceRepo_Get(t *testing.T) {
 			testRow := &MockRow{}
 			testRow.On("Scan", mock.Anything, mock.Anything).Return(test.errExec).Maybe()
 
-			mockBalanceDB := mockrepository.NewMockBalanceDBPool(t)
+			mockBalanceDB := mockrepository.NewMockDBPool(t)
 			mockBalanceDB.On("QueryRow", t.Context(), mock.Anything, mock.Anything).Return(testRow).Maybe()
 			repo := NewBalanceRepo(mockBalanceDB)
 			balance, errCreate := repo.Get(t.Context(), test.userID)
@@ -97,7 +97,7 @@ func TestBalanceRepo_AddAccrual(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockBalanceDB := mockrepository.NewMockBalanceDBPool(t)
+			mockBalanceDB := mockrepository.NewMockDBPool(t)
 			mockBalanceDB.On("Exec", t.Context(), mock.Anything, mock.Anything, mock.Anything).Return(pgconn.CommandTag{}, test.errExec).Maybe()
 			repo := NewBalanceRepo(mockBalanceDB)
 

@@ -5,12 +5,14 @@ package worker
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/eshadow1/gophermart/internal/client"
 	"github.com/eshadow1/gophermart/internal/loggers"
 	"github.com/eshadow1/gophermart/internal/repository"
-	"golang.org/x/sync/semaphore"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -40,12 +42,12 @@ type BalanceRepo interface {
 // AccrualWorker реализует фоновый воркер для обработки заказов через
 // внешнюю систему начислений.
 type AccrualWorker struct {
-	orderRepo   OrderRepo
-	balanceRepo BalanceRepo
-	accClient   *client.AccrualClient
-	sem         *semaphore.Weighted
-	batchSize   int
-	interval    time.Duration
+	orderRepo     OrderRepo
+	balanceRepo   BalanceRepo
+	accClient     *client.AccrualClient
+	batchSize     int
+	interval      time.Duration
+	maxConcurrent int
 }
 
 // NewAccrualWorker создает и возвращает новый экземпляр воркера для обработки
@@ -53,12 +55,12 @@ type AccrualWorker struct {
 func NewAccrualWorker(orderRepo OrderRepo, balanceRepo BalanceRepo,
 	accClient *client.AccrualClient, maxConcurrent int, batchSize int, interval time.Duration) *AccrualWorker {
 	return &AccrualWorker{
-		orderRepo:   orderRepo,
-		balanceRepo: balanceRepo,
-		accClient:   accClient,
-		sem:         semaphore.NewWeighted(int64(maxConcurrent)),
-		batchSize:   batchSize,
-		interval:    interval,
+		orderRepo:     orderRepo,
+		balanceRepo:   balanceRepo,
+		accClient:     accClient,
+		batchSize:     batchSize,
+		interval:      interval,
+		maxConcurrent: maxConcurrent,
 	}
 }
 
@@ -77,55 +79,68 @@ func (w *AccrualWorker) Run(ctx context.Context) {
 			loggers.Log.Info("accrual worker stopping")
 			return
 		case <-ticker.C:
-			w.processBatch(ctx)
+			if err := w.processBatch(ctx); err != nil {
+				loggers.Log.Info("batch processing failed", "err", err)
+			}
 		}
 	}
 }
 
 // processBatch получает пачку заказов из базы данных и запускает
 // их параллельную обработку в отдельных горутинах.
-func (w *AccrualWorker) processBatch(ctx context.Context) {
+func (w *AccrualWorker) processBatch(ctx context.Context) error {
 	orders, err := w.orderRepo.FetchPendingOrders(ctx, w.batchSize)
 	if err != nil {
-		loggers.Log.Error("failed to fetch pending orders", "err", err)
-		return
+		return fmt.Errorf("failed to fetch pending orders: %w", err)
 	}
 
-	for _, o := range orders {
-		if err := w.sem.Acquire(ctx, 1); err != nil {
-			return // Контекст отменён во время ожидания семафора
-		}
-		go w.processOrder(ctx, o)
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(w.maxConcurrent)
+
+	for _, order := range orders {
+		ord := order
+		g.Go(func() error {
+			return w.processOrder(gctx, ord)
+		})
 	}
+
+	return g.Wait()
 }
 
 // processOrder обрабатывает один заказ: запрашивает информацию о начислении
 // во внешней системе, обновляет статус заказа и начисляет баллы на баланс.
-func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOrder) {
-	defer w.sem.Release(1)
-
+func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOrder) error {
 	for retry := 0; retry <= maxRetries; retry++ {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		res, err := w.accClient.GetAccrual(ctx, o.Number)
 		if err != nil {
-			if rl, ok := err.(*client.RateLimitError); ok {
+			if rl, ok := errors.AsType[*client.RateLimitError](err); ok {
 				loggers.Log.Info("rate limited, waiting", "order", o.Number, "delay", rl.RetryAfter)
 				select {
 				case <-ctx.Done():
-					return
+					return fmt.Errorf("order %s: context canceled during retry wait: %w", o.Number, ctx.Err())
 				case <-time.After(rl.RetryAfter):
 					continue
 				}
 			}
+			if retry < maxRetries {
+				loggers.Log.Warn("external service error, retrying", "order", o.Number, "err", err)
+				continue
+			}
+
 			loggers.Log.Warn("external service error, will retry later", "order", o.Number, "err", err)
-			return
+			return nil
 		}
 
 		if res == nil {
 			errUpdateStatus := w.orderRepo.UpdateOrderStatus(ctx, o.Number, "INVALID", nil)
 			if errUpdateStatus != nil {
-				loggers.Log.Error("failed to add accrual to balance", "order", o.Number, "err", err)
+				return fmt.Errorf("order %s: failed to add accrual to balance: %w", o.Number, err)
 			}
-			return
+			return nil
 		}
 
 		var status string
@@ -136,8 +151,7 @@ func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOr
 			accrual = &res.Accrual
 			if *accrual > 0 {
 				if errBalance := w.balanceRepo.AddAccrual(ctx, o.UserID, *accrual); errBalance != nil {
-					loggers.Log.Error("failed to add accrual to balance", "order", o.Number, "err", errBalance)
-					return
+					return fmt.Errorf("order %s: failed to add accrual to balance: %w", o.Number, errBalance)
 				}
 			}
 		case "INVALID":
@@ -147,9 +161,11 @@ func (w *AccrualWorker) processOrder(ctx context.Context, o repository.PendingOr
 		}
 		errUpdateStatus := w.orderRepo.UpdateOrderStatus(ctx, o.Number, status, accrual)
 		if errUpdateStatus != nil {
-			loggers.Log.Error("failed to add accrual to balance", "order", o.Number, "err", err)
-			continue
+			return fmt.Errorf("update order %s status: %w", o.Number, errUpdateStatus)
 		}
-		return
+		return nil
 	}
+
+	loggers.Log.Warn("order processing exhausted retries without final status", "order", o.Number)
+	return nil
 }

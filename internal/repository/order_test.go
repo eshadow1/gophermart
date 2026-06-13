@@ -59,7 +59,7 @@ func TestOrderRepo_AddOrder(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			testRow := &MockRow{}
 			testRow.On("Scan", mock.Anything, mock.Anything).Return(test.errSelect).Maybe()
-			mockOrderDB := mockrepository.NewMockOrderDBPool(t)
+			mockOrderDB := mockrepository.NewMockDBPool(t)
 			mockOrderDB.On("Exec", t.Context(), mock.Anything, mock.Anything, mock.Anything).Return(pgconn.CommandTag{}, test.errInsert).Maybe()
 			mockOrderDB.On("QueryRow", t.Context(), mock.Anything, mock.Anything).Return(testRow).Maybe()
 
@@ -107,7 +107,7 @@ func TestOrderRepo_UpdateOrderStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockOrderDB := mockrepository.NewMockOrderDBPool(t)
+			mockOrderDB := mockrepository.NewMockDBPool(t)
 			mockOrderDB.On("Exec", t.Context(), mock.Anything, mock.Anything, mock.Anything).Return(pgconn.CommandTag{}, test.errUpdate).Maybe()
 
 			repo := NewOrderRepo(mockOrderDB)

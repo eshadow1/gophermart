@@ -14,24 +14,15 @@ const (
 	codePostgresDuplicateInsert = "23505"
 )
 
-// UserDBPool описывает интерфейс пула соединений с базой данных,
-// необходимый для работы UserRepo
-type UserDBPool interface {
-	// Exec выполняет SQL-запрос,
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	// QueryRow выполняет запрос
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-}
-
 // UserRepo реализует операции для работы с учётными записями пользователей
 // в базе данных PostgreSQL
 type UserRepo struct {
-	pool UserDBPool
+	pool DBPool
 }
 
 // NewUserRepo создает и возвращает новый экземпляр UserRepo,
 // внедряя зависимость пула соединений с базой данных.
-func NewUserRepo(pool UserDBPool) *UserRepo {
+func NewUserRepo(pool DBPool) *UserRepo {
 	return &UserRepo{pool: pool}
 }
 

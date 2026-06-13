@@ -9,30 +9,16 @@ import (
 	"github.com/eshadow1/gophermart/internal/loggers"
 	"github.com/eshadow1/gophermart/internal/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
-
-// BalanceDBPool описывает интерфейс пула соединений с базой данных,
-// необходимый для работы BalanceRepo.
-type BalanceDBPool interface {
-	// Exec выполняет SQL-запрос
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	// QueryRow выполняет запрос
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	// Query выполняет запрос
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	// BeginTx начинает новую транзакцию с указанными опциями изоляции.
-	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
-}
 
 // BalanceRepo реализует операции для работы с балансами пользователей
 type BalanceRepo struct {
-	pool BalanceDBPool
+	pool DBPool
 }
 
 // NewBalanceRepo создает и возвращает новый экземпляр BalanceRepo,
 // внедряя зависимость пула соединений с базой данных.
-func NewBalanceRepo(pool BalanceDBPool) *BalanceRepo {
+func NewBalanceRepo(pool DBPool) *BalanceRepo {
 	return &BalanceRepo{pool: pool}
 }
 

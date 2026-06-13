@@ -69,7 +69,7 @@ func TestUserRepo_Create(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockUserDB := mockrepository.NewMockUserDBPool(t)
+			mockUserDB := mockrepository.NewMockDBPool(t)
 			mockUserDB.On("Exec", t.Context(), mock.Anything, mock.Anything, mock.Anything).Return(pgconn.CommandTag{}, test.errInsert).Maybe()
 			repo := NewUserRepo(mockUserDB)
 
@@ -118,7 +118,7 @@ func TestUserRepo_GetByLogin(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			testRow := &MockRow{}
 			testRow.On("Scan", mock.Anything, mock.Anything).Return(test.errSelect).Maybe()
-			mockUserDB := mockrepository.NewMockUserDBPool(t)
+			mockUserDB := mockrepository.NewMockDBPool(t)
 			mockUserDB.On("QueryRow", t.Context(), mock.Anything, mock.Anything).Return(testRow).Maybe()
 
 			repo := NewUserRepo(mockUserDB)

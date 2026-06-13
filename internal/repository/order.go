@@ -8,27 +8,16 @@ import (
 
 	"github.com/eshadow1/gophermart/internal/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
-
-// OrderDBPool описывает интерфейс пула соединений с базой данных
-type OrderDBPool interface {
-	// Exec выполняет SQL-запрос
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	// QueryRow выполняет запрос
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	// Query выполняет запрос,
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-}
 
 // OrderRepo реализует операции для работы с заказами пользователей
 // в базе данных PostgreSQL
 type OrderRepo struct {
-	pool OrderDBPool
+	pool DBPool
 }
 
 // NewOrderRepo создает и возвращает новый экземпляр OrderRepo
-func NewOrderRepo(pool OrderDBPool) *OrderRepo {
+func NewOrderRepo(pool DBPool) *OrderRepo {
 	return &OrderRepo{pool: pool}
 }
 
