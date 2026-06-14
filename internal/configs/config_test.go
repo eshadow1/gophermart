@@ -27,10 +27,10 @@ func TestConfig_Init(t *testing.T) {
 			addrSystem:            DefaultSystemAddr,
 			addr:                  DefaultAddr,
 			logLevel:              DefaultLevelLog,
-			storagePathDB:         DefaultEmptySting,
+			storagePathDB:         DefaultEmptyString,
 			storagePathMigrations: DefaultMigrationPath,
-			authJWTSecret:         []byte(DefaultEmptySting),
-			authTokenIssuer:       DefaultEmptySting,
+			authJWTSecret:         []byte(DefaultEmptyString),
+			authTokenIssuer:       DefaultEmptyString,
 		},
 	}
 	for _, test := range tests {

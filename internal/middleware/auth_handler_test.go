@@ -14,8 +14,8 @@ import (
 
 func TestAuthMiddleware(t *testing.T) {
 	cfg := &configs.AuthConfig{
-		JWTSecret:   []byte(configs.DefaultEmptySting),
-		TokenIssuer: configs.DefaultEmptySting,
+		JWTSecret:   []byte(configs.DefaultEmptyString),
+		TokenIssuer: configs.DefaultEmptyString,
 	}
 	userID := int64(1)
 	token, errGenerate := generateTestToken(cfg.JWTSecret, userID)

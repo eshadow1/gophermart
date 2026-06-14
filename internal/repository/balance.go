@@ -5,8 +5,8 @@ package repository
 import (
 	"context"
 	"errors"
+	"log/slog"
 
-	"github.com/eshadow1/gophermart/internal/loggers"
 	"github.com/eshadow1/gophermart/internal/models"
 	"github.com/jackc/pgx/v5"
 )
@@ -44,9 +44,10 @@ func (r *BalanceRepo) Withdraw(ctx context.Context, userID int64, infoReq models
 		return errBegin
 	}
 	defer func() {
-		err := tx.Rollback(ctx)
-		if err != nil {
-			loggers.Log.Error("failed to rollback transaction", "err", err, "tx", tx)
+		if errRollback := tx.Rollback(ctx); errRollback != nil {
+			if !errors.Is(errRollback, pgx.ErrTxClosed) {
+				slog.Error("transaction rollback failed", "err", errRollback, "tx", tx)
+			}
 		}
 	}()
 

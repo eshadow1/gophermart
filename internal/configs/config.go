@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	// DefaultEmptySting представляет собой пустую строку
-	DefaultEmptySting = ""
+	// DefaultEmptyString представляет собой пустую строку
+	DefaultEmptyString = ""
 	// DefaultAddr — адрес HTTP-сервера приложения по умолчанию.
 	DefaultAddr = "localhost:8080"
 	// DefaultSystemAddr — адрес внешней системы начислений по умолчанию.
@@ -78,15 +78,15 @@ func (c *Config) Init() {
 	c.Storage.PathDB = c.getEnv("DATABASE_URI", c.Storage.PathDB)
 	c.Storage.PathMigrations = c.getEnv("MIGRATION_PATH", c.Storage.PathMigrations)
 
-	c.Auth.JWTSecret = []byte(c.getEnv("JWT_SECRET", DefaultEmptySting))
-	c.Auth.TokenIssuer = c.getEnv("TOKEN_ISSUER", DefaultEmptySting)
+	c.Auth.JWTSecret = []byte(c.getEnv("JWT_SECRET", DefaultEmptyString))
+	c.Auth.TokenIssuer = c.getEnv("TOKEN_ISSUER", DefaultEmptyString)
 }
 
 func (c *Config) parseWithFlag() {
 	flag.StringVar(&c.Addr, "a", DefaultAddr, "HTTP server address (host:port)")
 	flag.StringVar(&c.AddrSystem, "r", DefaultSystemAddr, "Accrual system address (host:port)")
 	flag.StringVar(&c.Log.Level, "l", DefaultLevelLog, "Level log")
-	flag.StringVar(&c.Storage.PathDB, "d", DefaultEmptySting, "PostgreSQL URI")
+	flag.StringVar(&c.Storage.PathDB, "d", DefaultEmptyString, "PostgreSQL URI")
 	flag.StringVar(&c.Storage.PathMigrations, "m", DefaultMigrationPath, "Migrations path PostgreSQL")
 
 	flag.Parse()
